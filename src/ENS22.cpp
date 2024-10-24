@@ -30,10 +30,45 @@ void ENS22::begin(int rxPin, int txPin, int rtsPin, int ctsPin, long baudrate)
     }
 }
 
-bool ENS22::defPDP(const char *PDP_type, const char *APN)
+bool ENS22::defPDP(const char *PDP_type, const char *APN, int mode, const char *opName)
 {
-    String command = "AT+CGDCONT=0,\"" + String(PDP_type) + "\",\"" + String(APN) + "\",0,0,0";
-    return sendCommand(command).indexOf("OK") != -1;
+    int attempts = 0;
+
+    String response = sendCommand("AT+CGDCONT?", 5000);
+    String searchTerm = "+CGDCONT: 0,\"" + String(PDP_type) + "\",\"" + String(APN) + "\"";
+
+    if (response.indexOf(searchTerm) == -1)
+    {
+
+        while (attempts < 5)
+        {
+            if (sendCommand("AT+CGATT=0", 5000).indexOf("OK") != -1)
+            {
+                break;
+            }
+            attempts++;
+        }
+
+        if (attempts == 5)
+            return false;
+
+        if (sendCommand("AT+CGDCONT=0,\"" + String(PDP_type) + "\",\"" + String(APN) + "\",0,0,0", 5000).indexOf("OK") == -1)
+            return false;
+
+        if (!restart())
+            return false;
+    }
+
+    attempts = 0;
+    while (attempts < 10)
+    {
+        if (sendCommand("AT+COPS=" + String(mode) + ",2,\"" + String(opName) + "\",9", 10000).indexOf("OK") != -1)
+        {
+            return true;
+        }
+        attempts++;
+    }
+    return false;
 }
 
 bool ENS22::setProfile(const char *conType, const char *user, const char *passwd, const char *apn, const char *dns)
@@ -41,7 +76,7 @@ bool ENS22::setProfile(const char *conType, const char *user, const char *passwd
     if (sendCommand("AT^SICS=0,\"conType\",\"" + String(conType) + "\"").indexOf("OK") == -1)
         return false;
 
-    if (sendCommand("AT^SISS=0,\"alphabet\",\"1\"").indexOf("OK") == -1)
+    if (sendCommand("AT^SICS=0,\"alphabet\",\"1\"").indexOf("OK") == -1)
         return false;
 
     if (sendCommand("AT^SICS=0,\"user\",\"" + String(user) + "\"").indexOf("OK") == -1)
@@ -57,7 +92,7 @@ bool ENS22::setProfile(const char *conType, const char *user, const char *passwd
         return false;
 
     int attempts = 0;
-    while (attempts < 10)
+    while (attempts < 15)
     {
         String ip = getIP();
         if (ip != "No IP")
@@ -185,10 +220,23 @@ void ENS22::debug()
     debugState = true;
 }
 
+void ENS22::manual(unsigned int timeout)
+{
+    if (Serial.available())
+    {
+        String command = Serial.readStringUntil('\n');
+
+        if (command.length() > 0)
+        {
+            sendCommand(command, timeout);
+        }
+    }
+}
+
 int ENS22::ping(const char *ip, int attempts, unsigned int timeout)
 {
     String command = "AT^SISX=\"Ping\",0,\"" + String(ip) + "\"," + String(attempts) + "," + String(timeout);
-    String response = sendCommand(command, (attempts * timeout) + timeout, "\nOK");
+    String response = sendCommand(command, (attempts * timeout) + 2 * timeout, "\nOK");
     String searchTerm = "^SISX: \"Ping\",3,0,";
     int avgStart = response.lastIndexOf(searchTerm);
 

@@ -10,7 +10,7 @@ public:
     ENS22(int hwSerial = 1);
     void begin(int rxPin, int txPin, int rtsPin, int ctsPin, long baudrate = 115200);
 
-    bool defPDP(const char *PDP_type, const char *APN);
+    bool defPDP(const char *PDP_type, const char *APN, int mode = 0, const char *opName = "");
 
     bool setProfile(const char *conType, const char *user, const char *passwd, const char *apn, const char *dns);
 
@@ -32,6 +32,7 @@ public:
     bool reset();
 
     void debug();
+    void manual(unsigned int timeout = 5000);
 
     int ping(const char *ip, int attempts = 4, unsigned int timeout = 2000);
 

@@ -67,11 +67,13 @@ This provides the necessary UART communication for controlling the ENS22-E modem
     - `ctsPin`: CTS pin (clear to send).
     - `baudrate`: Communication baud rate (optional, default is 115200).
   
-- `defPDP(const char *PDP_type, const char *APN)`
+- `defPDP(const char *PDP_type, const char *APN, int mode, const char *opName)`
   - Defines the PDP (Packet Data Protocol) context.
   - **Parameters**:
     - `PDP_type`: PDP type, e.g., "IP, IPV6, IPV4V6, NONIP".
     - `APN`: Access Point Name.
+    - `mode`: Network selection mode, 0 - auto (default) or 1 - manual.
+    - `opName`: Operator name e.g., "23003" (required only in manual mode).
 
 ### Connection
 
@@ -141,6 +143,9 @@ This provides the necessary UART communication for controlling the ENS22-E modem
 
 - `debug()`
   - Enables the debug mode for the ENS22 library. When debug mode is active, every AT command sent to the modem and the corresponding response will be printed to the serial monitor, allowing for easier troubleshooting and diagnostics during development.
+
+- `manual()`
+  - Reads input from the Serial interface (e.g., Serial Monitor) and forwards the received data directly to the ENS22 modem.
     
 - `restart()`
   - Restarts the modem.
